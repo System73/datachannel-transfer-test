@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="description" content="WebRTC code samples">
+        <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+        <meta itemprop="description" content="Client-side WebRTC code samples">
+        <meta itemprop="name" content="WebRTC code samples">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta id="theme-color" name="theme-color" content="#ffffff">
+
+        <base target="_blank">
+
+        <title>Generate and transfer data</title>
+
+        <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="css/main.css" />
+    </head>
+
+    <body>
+
+        <div id="container">
+
+            <h1><span>WebRTC data channel transfer tool</span></h1>
+            <section>
+                <p>This page generates and sends the specified amount of data via WebRTC datachannels.</p>
+                <p>To accomplish this in an interoperable way, the data is split into chunks which are then transferred via the datachannel. The datachannel is reliable and ordered by default which is well-suited to filetransfers.</p>
+                <p>Download time and speed is calculated and shown in the UI and the console at the end of the test.</p>
+                <p>Optionally, you can launch a ping-pong test while transferring chunks. Metrics are shown in the console.</p>
+                <p>View the console to see logging messages and to check that the page has not crashed <b>;-)</b>.</p>
+            </section>
+
+            <section>
+                <div class="input">
+                    <label for="ssUrl">Signal Server URL:</label>
+                    <input type="text" id="ssUrl" name="ssUrl" value="ws://127.0.0.1:8000"/>
+                    <button id="connectToSs" type="button">Connect</button>
+                    <div id="ssResultMsg"></div>
+                </div>
+                <br/>
+                <div class="input">
+                    <label for="destNodeId">Connect to Node ID:</label>
+                    <input type="text" id="destNodeId" name="destNodeId" value=""/>
+                    <button id="sendTheData" type="button" disabled>Connect & send</button>
+                </div>
+            </section>
+            <section>
+                <div class="input">
+                    <label for="megsToSend">Size of data to transfer:</label>
+                    <input type="number" id="megsToSend" min="1" name="megs" value="256"/>
+                    <label for="megsToSend">MB</label>
+                    <div id="errorMsg"></div>
+                </div>
+                <br/>
+                <!--
+                    <div class="input">
+                        <input type="checkbox" id="datachannelWorkaround" name="datachannelWorkaround" checked />
+                        <label for="datachannelWorkaround">Enable data channel workaround</label>
+                    </div>
+                    <div class="input">
+                        <input type="checkbox" id="ordered" checked />
+                        <label for="ordered">Ordered mode</label>
+                    </div>
+                    <br/>
+                -->
+                <div class="input">
+                    <label for="numPeerConnections">Simultaneous peer connections:</label>
+                    <input type="number" id="numPeerConnections" min="1" name="peerConnections" value="1"/>
+                </div>
+                <br/>
+                <div class="input">
+                    <label for="numDataChannels">Data channels per connection:</label>
+                    <input type="number" id="numDataChannels" min="1" name="dataChannels" value="1"/>
+                </div>
+            </section>
+            <section>
+                <div class="input">
+                    <input type="checkbox" id="pingPongEnable" name="pingPongEnable" />
+                    <label for="pingPongEnable">Enable ping-pong test</label>
+                </div>
+                <div id="pingPongShare">
+                    <input type="radio" id="pingPongShare1" name="pingPongShare" value="connection-share-channel-share" checked >
+                    <label for="pingPongShare1"><i>Share</i> a connection and data channel with chunks.</label><br>
+                    <input type="radio" id="pingPongShare2" name="pingPongShare" value="connection-share-channel-dedicated">
+                    <label for="pingPongShare2"><i>Share</i> a connection with chunks but use a <i>dedicated</i> data channel.</label><br>
+                    <input type="radio" id="pingPongShare3" name="pingPongShare" value="connection-dedicated-channel-dedicated">
+                    <label for="pingPongShare3">Use a <i>dedicated</i> connection and data channel.</label><br>
+                </div>
+                <br/>
+                <div class="input">
+                    <label for="pingPongSendPeriod">Period of ping-pong:</label>
+                    <input type="number" id="pingPongSendPeriod" min="100" name="ms" value="500"/>
+                    <label for="pingPongSendPeriod">ms</label>
+                </div>
+                <br/>
+                <div class="input">
+                    <label for="pingPongMetricsPeriod">Period of reporting metrics:</label>
+                    <input type="number" id="pingPongMetricsPeriod" min="500" name="ms" value="1000"/>
+                    <label for="pingPongMetricsPeriod">ms</label>
+                </div>
+            </section>
+            <section>
+                <div class="progress">
+                    <div class="label">Send progress: </div>
+                    <progress id="sendProgressBar" max=1 value=0></progress>
+                    <input type="text" id="sendProgressMessage" readOnly />
+                </div>
+                <div class="progress">
+                    <div class="label">Receive progress: </div>
+                    <progress id="receiveProgressBar" max=1 value=0></progress>
+                    <input type="text" id="receiveProgressMessage" readOnly />
+                </div>
+            </section>
+
+            <section>
+                <p>For more information about RTCDataChannel, see <a href="http://www.html5rocks.com/en/tutorials/webrtc/basics/#toc-rtcdatachannel" title="RTCDataChannel section of HTML5 Rocks article about WebRTC">Getting Started With WebRTC</a>.</p>
+            </section>
+        </div>
+
+        <script src="/js/adapter.js"></script>
+        <script src="/js/common.js"></script>
+        <script src="/js/DataChannelHandler.js"></script>
+        <script src="/js/PeerConnectionHandler.js"></script>
+        <script src="/js/RTTMetricsManager.js"></script>
+        <script src="/js/main.js"></script>
+    </body>
+</html>

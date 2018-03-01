@@ -1,0 +1,12 @@
+{
+  "name": "webclient",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "static -a 0.0.0.0"
+  },
+  "dependencies": {
+    "node-static": "^0.7.9"
+  }
+}

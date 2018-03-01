@@ -1,0 +1,12 @@
+{
+  "name": "signalserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "datatransfer-ss.js",
+  "dependencies": {
+    "nodejs-websocket": "^1.7.1"
+  },
+  "scripts": {
+    "start": "node datatransfer-ss.js 8000"
+  }
+}
