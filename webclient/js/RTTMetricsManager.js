@@ -1,3 +1,10 @@
+/**
+ * Copyright (C) System73 Europe, SL - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * 2018 - present
+ */
+
 //==============================================================================
 // RTTMetricsManager:
 //
