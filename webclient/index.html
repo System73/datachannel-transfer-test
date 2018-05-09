@@ -24,8 +24,21 @@
 
             <h1><span>WebRTC data channel transfer tool</span></h1>
             <section>
-                <p>This page generates and sends the specified amount of data via WebRTC datachannels.</p>
-                <p>To accomplish this in an interoperable way, the data is split into chunks which are then transferred via the datachannel. The datachannel is reliable and ordered by default which is well-suited to filetransfers.</p>
+                <p>
+                    This page generates and sends the specified amount of data via WebRTC datachannels.
+                    To accomplish this in an interoperable way, data is split into chunks which are then transferred
+                    via the datachannel. The datachannel is reliable by default which is well-suited to filetransfers.
+                </p>
+                <p>
+                    Steps to setup and perform the tests:
+                    <ol>
+                        <li>Open 2 browsers.</li>
+                        <li>Fill in the Signal Server URL in both browsers and press <strong>Connect</strong>. Both browsers will be assigned a Node ID.</li>
+                        <li>Decide which browser will send the data. The other one will be the receiver.</li>
+                        <li>Configure the settings at the bottom of the page in the sender.</li>
+                        <li>Fill in the Node ID of the receiver in the sender, and press <strong>Connect & send</strong>.</li>
+                    </ol>
+                </p>
                 <p>Download time and speed is calculated and shown in the UI and the console at the end of the test.</p>
                 <p>Optionally, you can launch a ping-pong test while transferring chunks. Metrics are shown in the console.</p>
                 <p>View the console to see logging messages and to check that the page has not crashed <b>;-)</b>.</p>
@@ -43,6 +56,7 @@
                     <label for="destNodeId">Connect to Node ID:</label>
                     <input type="text" id="destNodeId" name="destNodeId" value=""/>
                     <button id="sendTheData" type="button" disabled>Connect & send</button>
+                    <div id="destNodeIdErrorMsg"></div>
                 </div>
             </section>
             <section>
@@ -50,20 +64,9 @@
                     <label for="megsToSend">Size of data to transfer:</label>
                     <input type="number" id="megsToSend" min="1" name="megs" value="256"/>
                     <label for="megsToSend">MB</label>
-                    <div id="errorMsg"></div>
+                    <div id="megsToSendErrorMsg"></div>
                 </div>
                 <br/>
-                <!--
-                    <div class="input">
-                        <input type="checkbox" id="datachannelWorkaround" name="datachannelWorkaround" checked />
-                        <label for="datachannelWorkaround">Enable data channel workaround</label>
-                    </div>
-                    <div class="input">
-                        <input type="checkbox" id="ordered" checked />
-                        <label for="ordered">Ordered mode</label>
-                    </div>
-                    <br/>
-                -->
                 <div class="input">
                     <label for="numPeerConnections">Simultaneous peer connections:</label>
                     <input type="number" id="numPeerConnections" min="1" name="peerConnections" value="1"/>

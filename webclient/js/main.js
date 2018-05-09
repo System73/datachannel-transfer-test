@@ -25,7 +25,18 @@ var dataChannelPollingInterval = 10; // Milliseconds
 var displayTimerPeriod = 500; // milliseconds
 
 // ICE servers
-var peerConnectionConfig = { "iceServers": [ { "urls": "stun:52.214.21.200:3478" } ] };
+//      * Using more than two STUN/TURN servers slows down discovery
+//      * Using five or more STUN/TURN servers causes problems
+var peerConnectionConfig = {
+    iceServers: [
+        {
+            urls: "stun:52.214.21.200:3478"
+        },
+        {
+            urls: "stun:stun.l.google.com:19302"
+        }
+    ]
+};
 
 // Size of the ping-pong message
 var pingPongMessageSize = 4; // Bytes
@@ -40,21 +51,17 @@ var uiMegsToSend = document.querySelector('input#megsToSend');
 var uiSimultaneousPeerConnections = document.querySelector('input#numPeerConnections');
 var uiDataChannelsPerConnection = document.querySelector('input#numDataChannels');
 var uiSendButton = document.querySelector('button#sendTheData');
-//var uiOrderedCheckbox = document.querySelector('input#ordered');
-//var uiWorkaroundCheckbox = document.querySelector('input#datachannelWorkaround');
 var uiSendProgressBar = document.querySelector('progress#sendProgressBar');
 var uiSendProgressMessage = document.querySelector('input#sendProgressMessage');
 var uiReceiveProgressBar = document.querySelector('progress#receiveProgressBar');
 var uiReceiveProgressMessage = document.querySelector('input#receiveProgressMessage');
-var uiErrorMessage = document.querySelector('div#errorMsg');
+var uiDestNodeIdErrorMessage = document.querySelector('div#destNodeIdErrorMsg');
+var uiMegsToSendErrorMessage = document.querySelector('div#megsToSendErrorMsg');
 var uiSsResultMessage = document.querySelector('div#ssResultMsg');
 var uiPingPongCheckbox = document.querySelector('input#pingPongEnable');
 var uiPingPongShareOptions = document.getElementsByName('pingPongShare');
 var uiPingPongSendPeriod = document.querySelector('input#pingPongSendPeriod');
 var uiPingPongMetricsPeriod = document.querySelector('input#pingPongMetricsPeriod');
-
-uiSendButton.onclick = createSendingConnections;
-uiConnectToSsButton.onclick = connectToSs;
 
 // Other globals
 var localNodeId;
@@ -111,8 +118,6 @@ function lockDataTransferUI(enabled) {
         uiDestNodeId,
         uiSendButton,
         uiMegsToSend,
-//        uiOrderedCheckbox,
-//        uiWorkaroundCheckbox,
         uiSimultaneousPeerConnections,
         uiDataChannelsPerConnection,
         uiPingPongCheckbox,
@@ -133,7 +138,7 @@ function unlockDataTransferUI() {
 }
 
 function checkUIDependentLocks() {
-    uiSendButton.disabled = !uiDestNodeId.value || !uiMegsToSend.value || parseInt(uiMegsToSend.value) <= 0;
+    uiSendButton.disabled = !uiDestNodeId.value || uiDestNodeId.value === localNodeId || !uiMegsToSend.value || parseInt(uiMegsToSend.value) <= 0;
     disableUI(uiPingPongShareOptions, !uiPingPongCheckbox.checked);
     uiPingPongSendPeriod.disabled = !uiPingPongCheckbox.checked;
     uiPingPongMetricsPeriod.disabled = !uiPingPongCheckbox.checked;
@@ -179,25 +184,31 @@ function displayReceiverProgress(forced) {
     }
 }
 
-uiDestNodeId.addEventListener('input', function () {
+uiDestNodeId.addEventListener('input', function() {
     if (this.value) {
+        if (this.value === localNodeId) {
+            uiDestNodeIdErrorMessage.innerHTML = '<div class="warning"><p>Sending to itself is not supported.</p><p>Please enter Node ID of receiver browser.</p></div>';
+        } else {
+            uiDestNodeIdErrorMessage.innerHTML = '';
+        }
         checkUIDependentLocks();
     } else {
+        uiDestNodeIdErrorMessage.innerHTML = '';
         uiSendButton.disabled = true;
     }
 });
 
-uiMegsToSend.addEventListener('change', function () {
+uiMegsToSend.addEventListener('input', function() {
     if (this.value <= 0) {
-        uiErrorMessage.innerHTML = '<div class="warning">Please enter a number greater than zero.</div>';
+        uiMegsToSendErrorMessage.innerHTML = '<div class="warning">Please enter a number greater than zero.</div>';
         uiSendButton.disabled = true;
     } else {
-        uiErrorMessage.innerHTML = '';
+        uiMegsToSendErrorMessage.innerHTML = '';
         checkUIDependentLocks();
     }
 });
 
-uiPingPongCheckbox.addEventListener('change', function () {
+uiPingPongCheckbox.addEventListener('input', function() {
     if (this.checked) {
         checkUIDependentLocks();
     } else {
@@ -206,6 +217,9 @@ uiPingPongCheckbox.addEventListener('change', function () {
         uiPingPongMetricsPeriod.disabled = true;
     }
 });
+
+uiSendButton.onclick = createSendingConnections;
+uiConnectToSsButton.onclick = connectToSs;
 
 checkUIDependentLocks();
 
@@ -271,8 +285,6 @@ function processMessageFromSs(message) {
             channelsPerConnection = message.setup.transfer.dataChannels;
             uiSimultaneousPeerConnections.value = totalConnections;
             uiDataChannelsPerConnection.value = channelsPerConnection;
-//            uiWorkaroundCheckbox.checked = message.setup.transfer.enableDataChannelWorkaround;
-//            uiOrderedCheckbox.checked = message.setup.transfer.orderedData;
             pingPongEnabled = message.setup.pingPong.enabled;
             uiPingPongCheckbox.checked = pingPongEnabled;
             pingPongDedicatedConnection = message.setup.pingPong.dedicatedConnection;

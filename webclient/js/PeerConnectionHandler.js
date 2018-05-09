@@ -161,6 +161,10 @@ function PeerConnectionHandler(params) {
     //      'pingpong': to send ping-pong messages
     var role = params.role || 'transfer';
 
+    // Queue of ICE candidates to assign
+    // after remote SDP is succesfully assigned
+    var iceCandidates = [];
+
     //--------------------------------------------------------------------------
     // Peer connection initialization
 
@@ -178,6 +182,37 @@ function PeerConnectionHandler(params) {
         var dataChannelLabel = 'DataChannel-' + Date.now() + Math.round(performance.now() * 1000) + Math.round(Math.random() * 1000);
         return dataChannelLabel + '@' + connectionLabel;
     }
+
+    // Check that SDP is valid
+    // An invalid SDP is different in each browser:
+    //      Firefox: description is null
+    //      Chrome: description has fields 'type' and 'sdp', but are empty strings
+    //      Opera: same as Chrome
+    // To cover all cases, check that 'description' exists and has non-empty 'type' and 'sdp'
+    function isValidDescription(description) {
+        return !!description && !!description.type && !!description.sdp;
+    }
+
+    var processIceCandidates = function() {
+        if (isValidDescription(peerConnection.remoteDescription)) {
+            if (iceCandidates.length > 0) {
+                trace('Processing ' + iceCandidates.length + ' pending ICE candidates.');
+            }
+            var iceCandidate;
+            while (iceCandidate = iceCandidates.shift()) {
+                peerConnection
+                    .addIceCandidate(iceCandidate)
+                    .then(function () {
+                        trace('Add ICE candidate is OK.');
+                    })
+                    .catch(function (error) {
+                        console.error('Failed to add ICE candidate: ' + error.toString());
+                    });
+            }
+        } else {
+            trace('Remote session description not ready yet.');
+        }
+    }.bind(this);
 
     var createSenderChannels = function(numChannels) {
         for (var n = 0; n < numChannels; ++n) {
@@ -374,34 +409,41 @@ function PeerConnectionHandler(params) {
     }.bind(this);
     
     this.initSenderSide = function() {
+        iceCandidates = [];
         createSenderChannels(totalChannels);
         peerConnection
-                .createOffer()
-                .then(gotOffer)
-                .catch(function (error) {
-                    console.error('Failed to create session description: ' + error.toString());
-                });
+            .createOffer()
+            .then(gotOffer)
+            .catch(function (error) {
+                console.error('Failed to create session description: ' + error.toString());
+            });
     }.bind(this);
 
     this.initReceiverSide = function(description) {
+        iceCandidates = [];
         peerConnection.ondatachannel = onReceiverDataChannelOpenCallback;
-        peerConnection.setRemoteDescription(description);
         peerConnection
-                .createAnswer()
-                .then(gotAnswer)
-                .catch(function (error) {
-                    console.error('Failed to create session description: ' + error.toString());
-                });
+            .setRemoteDescription(description)
+            .then(function() {
+                trace('Set remote session description is OK.');
+                processIceCandidates();
+                return peerConnection.createAnswer();
+            })
+            .then(gotAnswer)
+            .catch(function (error) {
+                console.error('Failed to create session description: ' + error.toString());
+            });
     }.bind(this);
 
     this.initPingPongSenderSide = function() {
+        iceCandidates = [];
         this.createPingPongChannel();
         peerConnection
-                .createOffer()
-                .then(gotOffer)
-                .catch(function (error) {
-                    console.error('Failed to create session description: ' + error.toString());
-                });
+            .createOffer()
+            .then(gotOffer)
+            .catch(function (error) {
+                console.error('Failed to create session description: ' + error.toString());
+            });
     }.bind(this);
 
     this.createPingPongChannel = function() {
@@ -416,18 +458,20 @@ function PeerConnectionHandler(params) {
     }.bind(this);
 
     this.setRemoteAnswer = function(description) {
-        peerConnection.setRemoteDescription(description);        
+        peerConnection
+            .setRemoteDescription(description)
+            .then(function() {
+                trace('Set remote session description is OK.');
+                processIceCandidates();
+            })
+            .catch(function(error) {
+                console.error('Failed to set remote session description: ' + error.toString());
+            });
     }.bind(this);
     
     this.addIceCandidate = function(iceCandidate) {
-        peerConnection
-                .addIceCandidate(iceCandidate)
-                .then(function () {
-                    //trace('Added ICE candidate.');
-                })
-                .catch(function (error) {
-                    console.error('Failed to add ICE candidate: ' + error.toString());
-                });
+        iceCandidates.push(iceCandidate);
+        processIceCandidates();
     }.bind(this);
     
     this.getReadyToSendChannels = function() {
@@ -447,7 +491,7 @@ function PeerConnectionHandler(params) {
         });
         return ch;
     }.bind(this);
-    
+
     this.findChannel = function(label) {
         if (pingPongChannel && pingPongChannel.getLabel() === label) {
             return pingPongChannel;
@@ -461,8 +505,9 @@ function PeerConnectionHandler(params) {
             return found;
         }
     }.bind(this);
-    
+
     this.close = function() {
+        iceCandidates = [];
         if (pingPongChannel) {
             pingPongChannel.close();
             pingPongChannel = null;
@@ -472,7 +517,7 @@ function PeerConnectionHandler(params) {
             channels[label].close();
         });
         channels = {};
-        if (peerConnection.signalingState !== 'closed') {
+        if (peerConnection && peerConnection.signalingState !== 'closed') {
             peerConnection.close();
         }
     }.bind(this);
